@@ -97,6 +97,20 @@ void getData(Process P[], int &jobCount)
 		P[i].setBurstTime(x);
 	}
 }
+void generateRandomData(Process P[], int jobCount)
+{
+	srand(time(NULL));
+	for(int i=0; i<jobCount; i++)
+	{
+		P[i].setId(i+1);
+		P[i].setArrivalTime(rand()%(16));
+		P[i].setBurstTime(rand()%20+2);
+		P[i].setCompletionTime(0);
+		P[i].setTurnAroundTime(0);
+		P[i].setWaitingTime(0);
+	}
+
+}
 
 void FirstComeFirstServed(Process P[], int jobCount)
 {
@@ -171,6 +185,127 @@ void ShortestJobFirst(Process P[], int jobCount) // Shortest job first non preem
     display(P,jobCount,avgWaitTime,avgTurnAroundTime);
 }
 
+
+void ShortestJobRemainingFirst(Process P[], int jobCount)
+{
+	cout<<"\n\t*** SJRF ***\n";
+	int time = 0, executedCount = 0;
+	float avgTurnAroundTime = 0, avgWaitTime = 0;
+	vector <Process> processInQueue;
+	bool inQueue[jobCount];
+	fill(inQueue, inQueue+jobCount, false);
+	map<int,int> pid_compl;
+	while(executedCount!=jobCount)
+	{
+		for(int i=0; i<jobCount; i++)
+		{
+			if((P[i].getArrivalTime()<=time)&&(inQueue[i]==false))
+			{
+				processInQueue.push_back(P[i]);
+				inQueue[i]=true;
+			}
+
+		}
+
+		if(processInQueue.size()!=0)
+		{
+			vector<Process>::iterator minPosition = min_element(processInQueue.begin(),
+				processInQueue.end(), compareByBurst);
+			(*minPosition).setBurstTime((*minPosition).getBurstTime()-1);
+			time++;
+			if((*minPosition).getBurstTime()==0)
+			{
+				pid_compl[(*minPosition).getId()]=time;
+				executedCount++;
+				processInQueue.erase(minPosition);
+			}
+
+		}
+		else {
+			time++;
+		}
+	}
+	for(int i=0; i<jobCount ; i++){
+		P[i].setCompletionTime(pid_compl[P[i].getId()]);
+		P[i].setTurnAroundTime(P[i].getCompletionTime() - P[i].getArrivalTime());
+		P[i].setWaitingTime(P[i].getTurnAroundTime() - P[i].getBurstTime());
+		avgWaitTime+=P[i].getWaitingTime();
+		avgTurnAroundTime+=P[i].getTurnAroundTime();
+	}
+	avgWaitTime = (float)avgWaitTime/jobCount;
+	avgTurnAroundTime = (float)avgTurnAroundTime/jobCount;
+
+ 	display(P,jobCount,avgWaitTime,avgTurnAroundTime);
+
+}
+
+
+void RoundRobin(Process P[], int jobCount)
+{
+	cout<<"\n\t*** Round Robin ***\n";
+    int tQuantum;
+    cout<<"\t Time quantum : ";
+    cin>>tQuantum;
+    bool inQueue[jobCount+1];
+  	fill(inQueue, inQueue+jobCount+1, false);
+    map<int, int> id_compl;
+	int jobDone = 0,curTime=0;
+	queue<Process> ready_queue;
+	do {
+		for (int i = 0; i < jobCount; ++i) {
+			if(!inQueue[P[i].getId()] && P[i].getArrivalTime()==curTime) {
+				ready_queue.push(P[i]);
+				inQueue[P[i].getId()]=true;
+			}
+		}
+		if(!ready_queue.empty()) {
+    		Process p = ready_queue.front();
+    		ready_queue.pop();
+    		int tq=min(tQuantum, p.getBurstTime());
+    		// cout<<"p"<<p.getId()<<"->";
+    		int b=p.getBurstTime();
+    		p.setBurstTime(p.getBurstTime()-tq);
+    		for (int i = curTime+1; i <= curTime+tq; ++i)
+    		{
+    			for (int j = 0; j < jobCount; ++j)
+    			{
+    				if(!inQueue[P[j].getId()] && P[j].getArrivalTime()==i) {
+					ready_queue.push(P[j]);
+					inQueue[P[j].getId()]=true;
+					}
+    			}
+    		}
+    		curTime += tq;
+    		if(p.getBurstTime()==0) {
+    			jobDone++;
+    			p.setCompletionTime(curTime);
+    			id_compl[p.getId()]=p.getCompletionTime();
+    		} else {
+    			ready_queue.push(p);
+    		}
+		} else {
+			curTime++;
+		}
+	} while(jobDone!=jobCount);
+
+	float avgWaitTime=0, avgTurnAroundTime=0;
+
+	for (int i = 0; i < jobCount; ++i)
+	{
+		P[i].setCompletionTime(id_compl[P[i].getId()]);
+		P[i].setTurnAroundTime(P[i].getCompletionTime() - P[i].getArrivalTime());
+		P[i].setWaitingTime(P[i].getTurnAroundTime() - P[i].getBurstTime());
+		avgWaitTime+=P[i].getWaitingTime();
+		avgTurnAroundTime+=P[i].getTurnAroundTime();
+	}
+
+    avgWaitTime = (float)avgWaitTime/jobCount;
+	avgTurnAroundTime = (float)avgTurnAroundTime/jobCount;
+
+    display(P,jobCount,avgWaitTime,avgTurnAroundTime);
+
+}
+
 int main()
 {
 	int schedulingType, dataInputChoice, jobCount;
@@ -202,6 +337,9 @@ int main()
 				getData(P,jobCount);
 				break;
 			}
+			case 2: {
+				generateRandomData(P, jobCount);
+			}
 
 		}
 
@@ -213,6 +351,22 @@ int main()
 
 			case 2 : {
 				ShortestJobFirst(P, jobCount);
+				break;
+			}
+			
+			case 3 : {
+				RoundRobin(P, jobCount);
+				break;
+			}
+			case 4 : {
+				ShortestJobRemainingFirst(P, jobCount);
+				break;
+			}
+			case 5 : {
+                FirstComeFirstServed(P, jobCount);
+                ShortestJobFirst(P, jobCount);
+                RoundRobin(P, jobCount);
+                ShortestJobRemainingFirst(P, jobCount);
 				break;
 			}
 			
