@@ -123,6 +123,54 @@ void FirstComeFirstServed(Process P[], int jobCount)
     display(P,jobCount,avgWaitTime,avgTurnAroundTime);
 }
 
+
+void ShortestJobFirst(Process P[], int jobCount) // Shortest job first non preemptive
+{
+	cout<<"\n\t*** SJF ***\n";
+
+	int executedCount = 0;
+	bool processActive[jobCount];
+	fill(processActive, processActive+jobCount, false);
+	vector <Process> processInQueue;
+	map<int, int> id_compl;
+	for(int time = 0; executedCount<jobCount;) {
+		for(int i=0; i<jobCount; i++) {
+			if(!processActive[P[i].getId()-1] && P[i].getArrivalTime()<=time){ 		//To check if process is executed before and also whether it has arrived or not
+				processInQueue.push_back(P[i]);				// Pushed to Process Arrived Vector
+				processActive[P[i].getId()-1] = true;
+			}
+		}
+		if(processInQueue.size()!=0) {
+			vector<Process>::iterator minPosition = min_element(processInQueue.begin(),
+			processInQueue.end(), compareByBurst);
+			Process processMinBurstTime = *minPosition;
+			time += processMinBurstTime.getBurstTime();
+			id_compl[processMinBurstTime.getId()] = time;
+			executedCount++;
+			processInQueue.erase(minPosition);
+
+		} else {
+			time++;
+		}
+	}
+
+	float avgWaitTime=0, avgTurnAroundTime=0;
+
+	for (int i = 0; i < jobCount; ++i)
+	{
+		P[i].setCompletionTime(id_compl[P[i].getId()]);
+		P[i].setTurnAroundTime(P[i].getCompletionTime() - P[i].getArrivalTime());
+		P[i].setWaitingTime(P[i].getTurnAroundTime() - P[i].getBurstTime());
+		avgWaitTime+=P[i].getWaitingTime();
+		avgTurnAroundTime+=P[i].getTurnAroundTime();
+	}
+
+    avgWaitTime = (float)avgWaitTime/jobCount;
+	avgTurnAroundTime = (float)avgTurnAroundTime/jobCount;
+
+    display(P,jobCount,avgWaitTime,avgTurnAroundTime);
+}
+
 int main()
 {
 	int schedulingType, dataInputChoice, jobCount;
@@ -160,6 +208,11 @@ int main()
 		switch(schedulingType) {
 			case 1 : {
 				FirstComeFirstServed(P, jobCount);
+				break;
+			}
+
+			case 2 : {
+				ShortestJobFirst(P, jobCount);
 				break;
 			}
 			
