@@ -123,7 +123,6 @@ void FirstComeFirstServed(Process P[], int jobCount)
     display(P,jobCount,avgWaitTime,avgTurnAroundTime);
 }
 
-
 void ShortestJobFirst(Process P[], int jobCount) // Shortest job first non preemptive
 {
 	cout<<"\n\t*** SJF ***\n";
@@ -170,7 +169,6 @@ void ShortestJobFirst(Process P[], int jobCount) // Shortest job first non preem
 
     display(P,jobCount,avgWaitTime,avgTurnAroundTime);
 }
-
 
 int main()
 {
